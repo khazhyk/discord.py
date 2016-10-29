@@ -66,6 +66,7 @@ class ConnectionState:
         self.session_id = None
         self._calls = {}
         self._servers = {}
+        self._channels = {}
         self._voice_clients = {}
         self._private_channels = {}
         # extra dict to look up private channels by user id
@@ -122,11 +123,21 @@ class ConnectionState:
     def _get_server(self, server_id):
         return self._servers.get(server_id)
 
+    def _sync_channel_cache(self, after=None, before=None):
+        if before:
+            for channel in before.channels:
+                del self._channels[channel.id]
+        if after:
+            for channel in after.channels:
+                self._channels[channel.id] = channel
+
     def _add_server(self, server):
         self._servers[server.id] = server
+        self._sync_channel_cache(after=server)
 
     def _remove_server(self, server):
         self._servers.pop(server.id, None)
+        self._sync_channel_cache(before=server)
 
     @property
     def private_channels(self):
@@ -294,6 +305,7 @@ class ConnectionState:
             channel = server.get_channel(channel_id)
             if channel is not None:
                 server._remove_channel(channel)
+                del self._channels[channel.id]
                 self.dispatch('channel_delete', channel)
 
     def parse_channel_update(self, data):
@@ -312,6 +324,7 @@ class ConnectionState:
             if channel is not None:
                 old_channel = copy.copy(channel)
                 channel._update(server=server, **data)
+                self._channels[channel.id] = channel
                 self.dispatch('channel_update', old_channel, channel)
 
     def parse_channel_create(self, data):
@@ -324,6 +337,7 @@ class ConnectionState:
             server = self._get_server(data.get('guild_id'))
             if server is not None:
                 channel = Channel(server=server, **data)
+                self._channels[channel.id] = channel
                 server._add_channel(channel)
 
         self.dispatch('channel_create', channel)
@@ -422,6 +436,7 @@ class ConnectionState:
             if server is not None:
                 server.unavailable = False
                 server._from_data(data)
+                self._sync_channel_cache(after=server)
                 return server
 
         return self._add_server_from_data(data)
@@ -479,12 +494,14 @@ class ConnectionState:
     def parse_guild_sync(self, data):
         server = self._get_server(data.get('id'))
         server._sync(data)
+        self._sync_channel_cache(after=server)
 
     def parse_guild_update(self, data):
         server = self._get_server(data.get('id'))
         if server is not None:
             old_server = copy.copy(server)
             server._from_data(data)
+            self._sync_channel_cache(after=server, before=old_server)
             self.dispatch('server_update', old_server, server)
 
     def parse_guild_delete(self, data):
@@ -629,6 +646,12 @@ class ConnectionState:
         if id is None:
             return None
 
+        try:
+            return self._channels[id]
+        except KeyError:
+            return self._get_private_channel(id)
+
+        # dead
         for server in self.servers:
             channel = server.get_channel(id)
             if channel is not None:
