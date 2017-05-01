@@ -309,11 +309,11 @@ class DiscordWebSocket(websockets.client.WebSocketClientProtocol):
         yield from self.send_as_json(payload)
 
     @asyncio.coroutine
-    def received_message(self, msg):
-        self._dispatch('socket_raw_receive', msg)
-
-        if isinstance(msg, bytes):
-            msg = zlib.decompress(msg, 15, 10490000) # This is 10 MiB
+    def received_message(self, raw_msg):
+        self._dispatch('socket_raw_receive', raw_msg)
+        msg = raw_msg
+        if isinstance(raw_msg, bytes):
+            msg = zlib.decompress(raw_msg, 15, 10490000) # This is 10 MiB
             msg = msg.decode('utf-8')
 
         msg = json.loads(msg)
@@ -321,6 +321,7 @@ class DiscordWebSocket(websockets.client.WebSocketClientProtocol):
 
         log.debug('WebSocket Event: {}'.format(msg))
         self._dispatch('socket_response', msg)
+        self._dispatch('__spoo_socket_response', msg, raw_msg)
 
         op = msg.get('op')
         data = msg.get('d')
