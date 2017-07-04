@@ -59,7 +59,7 @@ class Game:
         self.type = kwargs.get('type')
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     def _iterator(self):
         for attr in self.__slots__:
