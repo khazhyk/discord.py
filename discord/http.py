@@ -187,7 +187,7 @@ class HTTPClient:
                         continue
 
                     # we've received a 500 or 502, unconditional retry
-                    if r.status in {500, 502} and tries <= 5:
+                    if r.status in {500, 502}:
                         yield from asyncio.sleep(1 + tries * 2, loop=self.loop)
                         continue
 
@@ -201,6 +201,8 @@ class HTTPClient:
                 finally:
                     # clean-up just in case
                     yield from r.release()
+            # We've run out of retries, raise.
+            raise HTTPException(r, data)
 
     def get(self, *args, **kwargs):
         return self.request('GET', *args, **kwargs)
