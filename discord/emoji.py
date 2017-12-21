@@ -60,7 +60,9 @@ class Emoji(Hashable):
         The emoji's ID.
     require_colons : bool
         If colons are required to use this emoji in the client (:PJSalt: vs PJSalt).
-    managed : bool
+    animated: bool
+        Whether an emoji is animated or not.
+    managed: bool
         If this emoji is managed by a Twitch integration.
     server : :class:`Server`
         The server the emoji belongs to.
@@ -68,7 +70,7 @@ class Emoji(Hashable):
         A list of :class:`Role` that is allowed to use this emoji. If roles is empty,
         the emoji is unrestricted.
     """
-    __slots__ = ["require_colons", "managed", "id", "name", "roles", 'server']
+    __slots__ = ["require_colons", "animated", "managed", "id", "name", "roles", 'server']
 
     def __init__(self, **kwargs):
         self.server = kwargs.pop('server')
@@ -79,6 +81,7 @@ class Emoji(Hashable):
         self.managed = emoji.get('managed')
         self.id = emoji.get('id')
         self.name = emoji.get('name')
+        self.animated = emoji.get('animated', False)
         self.roles = emoji.get('roles', [])
         if self.roles:
             roles = set(self.roles)
@@ -94,6 +97,8 @@ class Emoji(Hashable):
         return self._iterator()
 
     def __str__(self):
+        if self.animated:
+            return '<a:{0.name}:{0.id}>'.format(self)
         return "<:{0.name}:{0.id}>".format(self)
 
     @property
@@ -104,4 +109,5 @@ class Emoji(Hashable):
     @property
     def url(self):
         """Returns a URL version of the emoji."""
-        return "https://discordapp.com/api/emojis/{0.id}.png".format(self)
+        _format = 'gif' if self.animated else 'png'
+        return "https://cdn.discordapp.com/emojis/{0.id}.{1}".format(self, _format)

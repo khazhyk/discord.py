@@ -176,7 +176,7 @@ class EmojiConverter(IDConverter):
         message = self.ctx.message
         bot = self.ctx.bot
 
-        match = self._get_id_match() or re.match(r'<:[a-zA-Z0-9]+:([0-9]+)>$', self.argument)
+        match = self._get_id_match() or re.match(r'<a?:[a-zA-Z0-9]+:([0-9]+)>$', self.argument)
         result = None
         server = message.server
         if match is None:
