@@ -75,7 +75,7 @@ class Channel(Hashable):
     bitrate : int
         The channel's preferred audio bitrate in bits per second.
     voice_members
-        A list of :class:`Members` that are currently inside this voice channel.
+        A list of :class:`Member` that are currently inside this voice channel.
         If :attr:`type` is not :attr:`ChannelType.voice` then this is always an empty array.
     user_limit : int
         The channel's limit for number of members that can be in a voice channel.
