@@ -151,6 +151,10 @@ class Command(_BaseCommand):
         regular matter rather than passing the rest completely raw. If ``True``
         then the keyword-only argument will pass in the rest of the arguments
         in a completely raw matter. Defaults to ``False``.
+    require_var_positional: :class:`bool`
+        If ``True`` and a varadic positional argument is specified, requires
+        user specifies at least one argument instead of allowing zero. Defaults
+        to ``False``.
     ignore_extra: :class:`bool`
         If ``True``\, ignores extraneous strings passed to a command if all its
         requirements are met (e.g. ``?foo a b c`` when only expecting ``a``
@@ -225,6 +229,7 @@ class Command(_BaseCommand):
         finally:
             self._buckets = CooldownMapping(cooldown)
 
+        self.require_var_positional = kwargs.get('require_var_positional', False)
         self.ignore_extra = kwargs.get('ignore_extra', True)
         self.cooldown_after_parsing = kwargs.get('cooldown_after_parsing', False)
         self.cog = None
@@ -579,6 +584,8 @@ class Command(_BaseCommand):
                     kwargs[name] = await self.transform(ctx, param)
                 break
             elif param.kind == param.VAR_POSITIONAL:
+                if view.eof and self.require_var_positional:
+                    raise MissingRequiredArgument(param)
                 while not view.eof:
                     try:
                         transformed = await self.transform(ctx, param)
@@ -849,7 +856,10 @@ class Command(_BaseCommand):
                     result.append('[%s]' % name)
 
             elif param.kind == param.VAR_POSITIONAL:
-                result.append('[%s...]' % name)
+                if self.require_var_positional:
+                    result.append('<%s...>' % name)
+                else:
+                    result.append('[%s...]' % name)
             elif greedy:
                 result.append('[%s]...' % name)
             elif self._is_typing_optional(param.annotation):
