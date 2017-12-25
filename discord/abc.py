@@ -822,6 +822,8 @@ class Messageable(metaclass=abc.ABCMeta):
         Retrieves a single :class:`.Message` from the destination.
 
         This can only be used by bot accounts.
+        This attempts to get message from local cache, and falls back
+        to fetching from Discord.
 
         Parameters
         ------------
@@ -842,6 +844,10 @@ class Messageable(metaclass=abc.ABCMeta):
         :exc:`.HTTPException`
             Retrieving the message failed.
         """
+
+        msg = utils.get(self._state._messages, id=id)
+        if msg:
+            return msg
 
         channel = await self._get_channel()
         data = await self._state.http.get_message(channel.id, id)
