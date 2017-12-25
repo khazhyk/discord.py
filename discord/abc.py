@@ -821,7 +821,6 @@ class Messageable(metaclass=abc.ABCMeta):
 
         Retrieves a single :class:`.Message` from the destination.
 
-        This can only be used by bot accounts.
         This attempts to get message from local cache, and falls back
         to fetching from Discord.
 
@@ -850,8 +849,14 @@ class Messageable(metaclass=abc.ABCMeta):
             return msg
 
         channel = await self._get_channel()
-        data = await self._state.http.get_message(channel.id, id)
-        return self._state.create_message(channel=channel, data=data)
+
+        if self._state.is_bot:
+            data = await self._state.http.get_message(channel.id, id)
+            return self._state.create_message(channel=channel, data=data)
+        else:
+            data = await self._state.http.logs_from(channel.id, limit=1, before=id + 1)
+            if data and int(data[0]['id']) == id:
+                return self._state.create_message(channel=channel, data=data[0])
 
     async def pins(self):
         """|coro|
