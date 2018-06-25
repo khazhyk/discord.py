@@ -172,7 +172,7 @@ class ConnectionState:
             launch.set()
             yield from asyncio.sleep(2, loop=self.loop)
 
-        servers = self._ready_state.servers
+        servers = next(zip(*self._ready_state.servers), [])
 
         # get all the chunks
         chunks = []
@@ -190,6 +190,12 @@ class ConnectionState:
                 yield from asyncio.wait(chunks, timeout=len(chunks) * 30.0, loop=self.loop)
             except asyncio.TimeoutError:
                 log.info('Somehow timed out waiting for chunks.')
+
+        for server, unavailable in self._ready_state.servers:
+            if unavailable == False:
+                self.dispatch('server_available', server)
+            else:
+                self.dispatch('server_join', server)
 
         # remove the state
         try:
@@ -519,7 +525,7 @@ class ConnectionState:
                 try:
                     state = self._ready_state
                     state.launch.clear()
-                    state.servers.append(server)
+                    state.servers.append((server, unavailable))
                 except AttributeError:
                     # the _ready_state attribute is only there during
                     # processing of useful READY.
