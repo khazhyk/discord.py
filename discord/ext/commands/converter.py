@@ -35,7 +35,7 @@ __all__ = ['Converter', 'MemberConverter', 'UserConverter',
            'TextChannelConverter', 'InviteConverter', 'RoleConverter',
            'GameConverter', 'ColourConverter', 'VoiceChannelConverter',
            'EmojiConverter', 'PartialEmojiConverter', 'CategoryChannelConverter',
-           'IDConverter', 'clean_content', 'Greedy']
+           'IDConverter', 'clean_content', 'Greedy', 'ParamDefault']
 
 def _get_from_guilds(bot, getter, argument):
     result = None
@@ -44,6 +44,29 @@ def _get_from_guilds(bot, getter, argument):
         if result:
             return result
     return result
+
+class ParamDefault:
+    """The base class of custom defaults that require the :class:`.Context`.
+
+    Classes that derive from this should override the :meth:`~.ParamDefault.default`
+    method to do its conversion logic. This method must be a coroutine.
+    """
+
+    async def default(self, ctx):
+        """|coro|
+
+        The method to override to do conversion logic.
+
+        If an error is found while converting, it is recommended to
+        raise a :exc:`.CommandError` derived exception as it will
+        properly propagate to the error handlers.
+
+        Parameters
+        -----------
+        ctx: :class:`.Context`
+            The invocation context that the argument is being used in.
+        """
+        raise NotImplementedError('Derived classes need to implement this.')
 
 class Converter:
     """The base class of custom converters that require the :class:`.Context`

@@ -402,6 +402,19 @@ class Command(_BaseCommand):
                 converter = str
         return converter
 
+    async def _resolve_default(self, ctx, param):
+        try:
+            if inspect.isclass(param.default) and issubclass(param.default, converters.ParamDefault):
+                instance = param.default()
+                return await instance.default(ctx)
+            elif isinstance(param.default, converters.ParamDefault):
+                return await param.default.default(ctx)    
+        except CommandError as e:
+            raise e
+        except Exception as e:
+            raise ConversionError(param.default, e) from e
+        return param.default
+
     async def transform(self, ctx, param):
         required = param.default is param.empty
         converter = self._get_converter(param)
@@ -429,7 +442,7 @@ class Command(_BaseCommand):
                 if self._is_typing_optional(param.annotation):
                     return None
                 raise MissingRequiredArgument(param)
-            return param.default
+            return await self._resolve_default(ctx, param)
 
         previous = view.index
         if consume_rest_is_special:
