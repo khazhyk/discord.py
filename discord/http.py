@@ -32,6 +32,7 @@ from urllib.parse import quote as _uriquote
 import weakref
 
 import aiohttp
+import yarl
 
 from .errors import HTTPException, Forbidden, NotFound, LoginFailure, GatewayNotFound
 from . import __version__, utils
@@ -225,7 +226,7 @@ class HTTPClient:
             raise HTTPException(r, data)
 
     async def get_from_cdn(self, url):
-        async with self.__session.get(url) as resp:
+        async with self.__session.get(yarl.URL(url, encoded=True)) as resp:
             if resp.status == 200:
                 return await resp.read()
             elif resp.status == 404:
