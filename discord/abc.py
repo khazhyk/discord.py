@@ -904,6 +904,12 @@ class Messageable(metaclass=abc.ABCMeta):
         data = await state.http.pins_from(channel.id)
         return [state.create_message(channel=channel, data=m) for m in data]
 
+    def cached_messages(self):
+        """Iterator[:class:`~discord.Message`]: messages in this channel the client has cached, newest first."""
+        for message in reversed(self._state._messages):
+            if message.channel.id == self.id:
+                yield message
+
     def history(self, *, limit=100, before=None, after=None, around=None, oldest_first=None):
         """Return an :class:`.AsyncIterator` that enables receiving the destination's message history.
 
