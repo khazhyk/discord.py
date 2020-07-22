@@ -335,7 +335,7 @@ class DiscordWebSocket(websockets.client.WebSocketClientProtocol):
             # internal exception signalling to reconnect.
             log.info('Received RECONNECT opcode.')
             yield from self.close()
-            raise ResumeWebsocket()
+            raise ResumeWebSocket()
 
         if op == self.HEARTBEAT_ACK:
             self._keep_alive.ack()
